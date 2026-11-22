@@ -1,0 +1,582 @@
+# About DCM and entire project 
+Snowflake Infrastructure as Code (IaC) + DCM + dbt Interview Notes
+
+Think of it like this:
+
+Snowflake = Data Warehouse
+IaC (Infrastructure as Code) = Create Snowflake objects using code instead of manually clicking
+DCM (Data Change Management) = Managing schema/object changes across environments
+dbt (Data Build Tool) = SQL-based transformation framework inside Snowflake
+1. What is Infrastructure as Code (IaC)?
+Definition
+
+Infrastructure as Code means managing infrastructure using code files instead of manually creating objects.
+
+Without IaC
+
+Manually create:
+
+Databases
+Schemas
+Warehouses
+Roles
+Users
+Grants
+
+Problem:
+
+❌ Human errors
+
+❌ Difficult to track changes
+
+❌ No version control
+
+With IaC
+
+Everything is stored in Git.
+
+Example:
+
+YAML
+database: SALES_DB
+schema: CURATED
+warehouse: ETL_WH
+
+Benefits:
+
+✅ Repeatable
+
+✅ Automated
+
+✅ Version Controlled
+
+✅ Easy Deployment
+
+Interview Answer
+
+"Infrastructure as Code allows us to provision Snowflake resources using code and deploy them consistently across Dev, QA, and Prod environments."
+
+2. What is Snowflake IaC?
+
+Using tools like:
+
+Terraform
+Snowflake CLI
+GitHub Actions
+Azure DevOps
+
+to create:
+
+Databases
+Schemas
+Warehouses
+Users
+Roles
+Grants
+
+automatically.
+
+3. Why use IaC in Snowflake?
+Example
+
+Instead of:
+
+Plain Text
+Login
+Create DB
+Create Schema
+Assign Role
+Grant Access
+
+You write code once:
+
+Terraform
+resource "snowflake_database" "sales" {
+name = "SALES_DB"
+}
+
+and deploy everywhere.
+
+4. Most Common IaC Tool: Terraform
+What is Terraform?
+
+Open-source IaC tool from HashiCorp.
+
+Used heavily with Snowflake.
+
+Interview Question
+
+Why Terraform?
+
+Answer:
+
+Version Control
+Reusable
+Automated Deployment
+Easy Rollback
+Environment Consistency
+5. Terraform Workflow
+Step 1
+
+Write code
+
+Terraform
+resource "snowflake_database" "db" {
+name = "SALES_DB"
+}
+Step 2
+
+Initialize
+
+Shell
+terraform init
+Step 3
+
+Check Changes
+
+Shell
+terraform plan
+Step 4
+
+Deploy
+
+Shell
+terraform apply
+Easy Interview Line
+
+"Terraform plan shows what changes will happen, and terraform apply actually creates or modifies Snowflake resources."
+
+6. Snowflake Objects Managed by Terraform
+Database
+Terraform
+resource "snowflake_database" "sales" {
+name = "SALES_DB"
+}
+Schema
+Terraform
+resource "snowflake_schema" "curated" {
+database = "SALES_DB"
+name = "CURATED"
+}
+Warehouse
+Terraform
+resource "snowflake_warehouse" "etl" {
+name = "ETL_WH"
+warehouse_size = "MEDIUM"
+}
+Role
+Terraform
+resource "snowflake_account_role" "developer" {
+name = "DEVELOPER_ROLE"
+}
+Interview Question
+What Snowflake resources have you managed using Terraform?
+
+Answer:
+
+Databases
+Schemas
+Warehouses
+Roles
+Users
+Grants
+Resource Monitors
+7. What is DCM?
+DCM = Database Change Management
+
+Managing database changes through code.
+
+Example:
+
+Today:
+
+SQL
+CREATE TABLE customer
+
+Tomorrow:
+
+SQL
+ALTER TABLE customer
+ADD COLUMN email VARCHAR;
+
+Need controlled deployment.
+
+That process is called DCM.
+
+Why DCM?
+
+Without DCM:
+
+Dev and Prod become different.
+
+Problems:
+
+❌ Missing columns
+
+❌ Missing tables
+
+❌ Failed pipelines
+
+With DCM:
+
+✅ Same structure everywhere
+
+✅ Changes tracked
+
+✅ Rollback possible
+
+Interview Definition
+
+"DCM ensures all database schema changes are version controlled, reviewed, tested, and deployed consistently across environments."
+
+8. DCM Tools
+
+Common tools:
+
+Flyway
+Liquibase
+schemachange (Snowflake popular)
+Terraform
+9. What is Schemachange?
+
+Snowflake's popular migration framework.
+
+SQL migration files stored in Git.
+
+Example:
+
+SQL
+V1__create_customer.sql
+V2__add_email.sql
+V3__create_product.sql
+
+When deployment runs:
+
+Plain Text
+V1
+V2
+V3
+
+automatically.
+
+Benefits
+
+✅ Version Control
+
+✅ Auditability
+
+✅ Repeatability
+
+✅ Easy Promotion
+
+Interview Question
+Why Schemachange?
+
+Answer:
+
+"We use Schemachange to manage SQL-based Snowflake schema migrations. It tracks executed changes and ensures deployments occur in sequence."
+
+10. What is dbt?
+
+dbt = Data Build Tool
+
+Used for:
+
+Data Transformation
+Testing
+Documentation
+Data Modelling
+
+inside Snowflake.
+
+Flow
+Plain Text
+Raw Data
+↓
+Staging
+↓
+Transformation
+↓
+Business Tables
+↓
+Reporting
+
+dbt handles transformation layer.
+
+Interview Definition
+
+"dbt enables analytics engineers and data engineers to transform data using SQL while maintaining version control, testing, and documentation."
+
+11. Why dbt?
+
+Before dbt:
+
+SQL
+Huge SQL scripts
+
+Problems:
+
+❌ Hard maintenance
+
+❌ No testing
+
+❌ No lineage
+
+With dbt:
+
+✅ Modular SQL
+
+✅ Reusable Models
+
+✅ Automated Testing
+
+✅ Documentation
+
+✅ Data Lineage
+
+12. dbt Architecture
+Plain Text
+Source Tables
+↓
+Staging Models
+↓
+Intermediate Models
+↓
+Mart Models
+↓
+Dashboard
+13. dbt Models
+
+A model is simply a SQL file.
+
+Example:
+
+SQL
+select *
+from customer
+where active='Y'
+
+Save as:
+
+Plain Text
+stg_customer.sql
+
+dbt creates table/view.
+
+Interview Question
+What is a dbt model?
+
+Answer:
+
+"A dbt model is a SQL SELECT statement that dbt materializes into a table or view inside Snowflake."
+
+14. Materializations in dbt
+View
+YAML
+materialized: view
+
+Every query runs source SQL.
+
+Table
+YAML
+materialized: table
+
+Stores data physically.
+
+Incremental
+YAML
+materialized: incremental
+
+Loads only new data.
+
+Interview Question
+
+Which materialization is used for large datasets?
+
+✅ Incremental
+
+15. dbt Tests
+Generic Tests
+
+Unique
+
+YAML
+unique
+
+Not Null
+
+YAML
+not_null
+
+Relationships
+
+YAML
+relationships
+
+Accepted Values
+
+YAML
+accepted_values
+Example
+YAML
+customer_id:
+- unique
+- not_null
+Interview Answer
+
+"dbt tests help validate data quality by checking uniqueness, null values, relationships, and business rules."
+
+16. dbt Commands
+Run Models
+Shell
+dbt run
+Execute Tests
+Shell
+dbt test
+Generate Documentation
+Shell
+dbt docs generate
+Serve Documentation
+Shell
+dbt docs serve
+17. dbt Sources
+
+Source tables are raw tables.
+
+Example:
+
+YAML
+sources:
+- name: sales_raw
+
+Used to track lineage and testing.
+
+18. dbt Lineage
+
+Shows:
+
+Plain Text
+Source
+↓
+Staging
+↓
+Mart
+↓
+Dashboard
+
+Can easily identify impact of change.
+
+Interview Question
+What is Data Lineage?
+
+Answer:
+
+"Data lineage shows how data flows from source systems through transformations to final reporting layers."
+
+19. Snowflake + dbt Architecture
+Plain Text
+ADLS
+↓
+ADF
+↓
+Bronze
+↓
+Snowflake Raw
+↓
+dbt Staging
+↓
+dbt Curated
+↓
+Power BI
+20. Real-Time Project Interview Answer
+How did you use Snowflake IaC, DCM, and dbt?
+
+Answer:
+
+"In our project we used Terraform to provision Snowflake databases, schemas, warehouses, roles, and grants. All infrastructure definitions were stored in Git and deployed through Azure DevOps pipelines.
+
+For database change management, we used Schemachange to version-control Snowflake schema changes using migration scripts.
+
+For data transformations, we used dbt to create staging, intermediate, and curated models. dbt tests were implemented for data quality checks like unique and not-null validations. The transformed data was finally consumed by Power BI reports."
+
+21. One-Minute Interview Revision
+Terraform
+
+✅ Creates Snowflake Infrastructure
+
+✅ Database
+
+✅ Schema
+
+✅ Warehouse
+
+✅ Roles
+
+✅ Grants
+
+DCM
+
+✅ Database Change Management
+
+✅ Flyway
+
+✅ Liquibase
+
+✅ Schemachange
+
+✅ Version Controlled Deployments
+
+dbt
+
+✅ SQL Transformations
+
+✅ Data Quality Tests
+
+✅ Documentation
+
+✅ Lineage
+
+✅ Incremental Loads
+
+Most Asked Interview Questions
+1. Why Terraform in Snowflake?
+
+Automates creation of databases, schemas, warehouses, roles, and grants.
+
+2. What is DCM?
+
+Managing database changes through version-controlled migration scripts.
+
+3. Why Schemachange?
+
+Tracks and deploys Snowflake schema changes in sequence.
+
+4. What is dbt?
+
+A SQL-based transformation framework used on top of Snowflake.
+
+5. Difference between Terraform and dbt?
+Terraform	dbtCreates Infrastructure	Transforms Data
+Database	Tables/Data
+Warehouse	Models
+Roles	SQL Logic
+6. What is Incremental Model?
+
+Processes only new or changed records instead of full load.
+
+7. What are dbt tests?
+unique
+not_null
+accepted_values
+relationships
+8. What is lineage?
+
+Tracking data flow from source to target through all transformations.
+
+Easy Memory Trick
+Plain Text
+Terraform = Build House
+DCM = Track House Changes
+dbt = Arrange Furniture Inside House
+
+This simple analogy is very effective in interviews and helps explain the complete Snowflake IaC + DCM + dbt ecosystem.

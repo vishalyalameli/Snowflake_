@@ -1,0 +1,101 @@
+USE WAREHOUSE DEV_WH;
+USE DATABASE ECOMMERCE_DB;
+USE SCHEMA RAW;
+
+--Load newly added file
+LIST @ECOMMERCE_S3_KEY_STAGE/orders/;
+DESC TABLE orders;
+
+-- Error
+-- COPY INTO ECOMMERCE_DB.RAW.ORDERS
+-- FROM @ECOMMERCE_S3_KEY_STAGE/orders/
+-- FILE_FORMAT = (FORMAT_NAME = ECOMMERCE_CSV_LOAD_FORMAT)
+-- ON_ERROR = 'ABORT_STATEMENT';
+
+
+-- Issue 1:
+-- Source CSV had 10 columns, but ORDERS table had only 8 columns.
+-- Fixed by selecting only the required 8 columns from the staged file.
+
+-- Issue 2:
+-- ORDER_PURCHASE_TIMESTAMP values were in 'DD-MM-YYYY HH24:MI' format.
+-- Snowflake could not parse them using the default timestamp format.
+-- Fixed by setting TIMESTAMP_FORMAT = 'DD-MM-YYYY HH24:MI' in the file format.
+
+-- Interview
+-- Validated source schema against target schema.
+-- Mapped only required columns.
+-- Configured the correct timestamp format.
+-- Successfully loaded data from S3 stage into Snowflake RAW table.
+
+CREATE OR REPLACE FILE FORMAT ECOMMERCE_CSV_LOAD_FORMAT
+TYPE = CSV
+SKIP_HEADER = 1
+TIMESTAMP_FORMAT = 'DD-MM-YYYY HH24:MI'
+
+COPY INTO ECOMMERCE_DB.RAW.ORDERS
+FROM (
+    SELECT
+        $1,$2,$3,$4,$5,$6,$7,$8
+    FROM @ECOMMERCE_S3_KEY_STAGE/orders/
+)
+FILE_FORMAT = (FORMAT_NAME = ECOMMERCE_CSV_LOAD_FORMAT);
+
+
+
+SELECT *
+FROM TABLE(
+    INFORMATION_SCHEMA.COPY_HISTORY(
+        TABLE_NAME => 'ECOMMERCE_DB.RAW.ORDERS',
+        START_TIME => DATEADD('DAY', -7, CURRENT_TIMESTAMP())
+    )
+);
+
+
+--Load a specific file
+
+COPY INTO ORDERS
+FROM @ECOMMERCE_S3_KEY_STAGE/orders/
+FILES = ('orders_2017-11-26.csv')
+FILE_FORMAT = (
+    FORMAT_NAME = ECOMMERCE_CSV_INFER_FORMAT
+)
+MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE
+FORCE = FALSE;
+
+
+--Automating the daily load
+CREATE OR REPLACE TASK DAILY_ORDERS_LOAD
+    WAREHOUSE = DEV_WH
+    SCHEDULE = 'USING CRON 0 2 * * * UTC'
+AS
+    COPY INTO ECOMMERCE_DB.RAW.ORDERS
+    FROM @ECOMMERCE_DB.RAW.ECOMMERCE_S3_KEY_STAGE/orders/
+    FILE_FORMAT = (
+        FORMAT_NAME = 'ECOMMERCE_DB.RAW.ECOMMERCE_CSV_INFER_FORMAT'
+    )
+    MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE
+    ON_ERROR = 'ABORT_STATEMENT'
+    FORCE = FALSE;
+
+ALTER TASK DAILY_ORDERS_LOAD RESUME;
+
+--manual run
+EXECUTE TASK DAILY_ORDERS_LOAD;
+
+SHOW TASKS LIKE 'DAILY_ORDERS_LOAD';
+
+
+--Validating the Daily load
+SELECT
+    FILE_NAME,
+    STATUS,
+    ROW_COUNT,
+    LAST_LOAD_TIME
+FROM TABLE(
+    ECOMMERCE_DB.INFORMATION_SCHEMA.COPY_HISTORY(
+        TABLE_NAME => 'ECOMMERCE_DB.RAW.ORDERS',
+        START_TIME => DATEADD('DAY', -7, CURRENT_TIMESTAMP())
+    )
+)
+ORDER BY LAST_LOAD_TIME DESC;

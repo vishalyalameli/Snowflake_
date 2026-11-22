@@ -1,0 +1,1 @@
+{"applied_configuration":{"template_variables":{"environment":"DEV","database_base":"EMPLOYEE_ANALYTICS","retention_days":1,"enable_data_quality":false,"env_suffix":"_DEV","auto_suspend_seconds":60,"transform_wh_size":"X-SMALL","load_wh_size":"X-SMALL"},"configuration_name":"DEV"},"analysis_result":{"files":[]}}
