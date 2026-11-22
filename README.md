@@ -9,3 +9,4 @@ and data engineering practice.
 - SQL
 - Python
 - ETL Pipelines
+- AWS/Azure
